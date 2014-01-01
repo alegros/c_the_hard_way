@@ -2,17 +2,22 @@
 
 int main (int argc, char *argv[])
 {
-	int numbers[4] = {2};
-	char name[4] = {a};
+	int numbers[4] = {'a'};
+	//char name[4] = {'Z', 'e', 'd', '\0'};
+	char *name = "Zed";
+	int atoi[4] = {name[0],name[1],name[2],name[3]};
 	
 	// First, print them out raw
-	printf("numbers : %d %d %d %d\n",
-			numbers[0], numbers[1],
-			numbers[2], numbers[3]);
-	printf("name each : %c %c %c %c\n",
+	printf("name : %c %c %c %c\n",
 			name[0], name[1],
 			name[2], name[3]);
+	printf("numbers each : %d %d %d %d\n",
+			numbers[0], numbers[1],
+			numbers[2], numbers[3]);
 	printf("name : %s\n", name); 
+	printf("name to int : %d%d%d%d\n",
+			atoi[0], atoi[1],
+			atoi[2], atoi[3]); 
 
 	// Setup the numbers
 	numbers[0] = 1;
