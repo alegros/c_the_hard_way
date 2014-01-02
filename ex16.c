@@ -55,7 +55,7 @@ int main (int argc, char *argv[])
 	joe->age += 20;
 	joe->height -= 2;
 	joe->weight += 40;
-	Person_print(joe);
+	Person_print(NULL);
 
 	frank->age += 20;
 	frank->weight += 20;
