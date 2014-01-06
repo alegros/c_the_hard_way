@@ -6,6 +6,7 @@ void func1() {
 	printf("%c ", *s); // h
 	printf("%c ", *(s+4)); // o
 	printf("%c ", *s); // h
+	s++;
 	printf("%s ", s); // hello
 	printf("\n\n");
 }
@@ -36,12 +37,15 @@ void func3(char *argv[]) {
 void func4 ()
 {
 	char *s[] = {"let's do it", "hope it works", "maybe...", "oh god why..."};
-	printf("Let's play with an array of strings, aka an array of characters arrays (s) :\n");
+	printf("Let's play with an array of strings, aka an array of characters arrays (s)\n");
+	printf("Our array : {\"let\'s do it\", \"hope it works\", \"maybe...\", \"oh god why...\"}\n");
 	printf("**s : %c\n", **s);
 	printf("*s : %s\n", *s);
-	s++;
+	char **p = s; 
+	printf("Arrays are immutable. We will use a pointer (p) so we can incremente it\n");
+	// Mieux vaut utiliser la syntaxe [] avec les tableaux
+	printf("p++ : %s\n", *(++p)); // get the value pointed at by '++p'
 	printf("\n\n");
-	
 }
 
 int main (int argc, char *argv[])
