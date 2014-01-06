@@ -3,14 +3,16 @@
 // return 0 if EOF, else 1
 int read_line(char line[])
 {
+	printf("(line : %p -- ", line);
+	printf("*line : %d)", *line);
 	char c;
-	int i = 0;
+	//int i = 0;
 	while ((c = getchar()) != 0 && c != '\n' && c != EOF) {
-		line[i] = c;
-		i++;
+		*line++ = c;
 	}
-	line[i++] = '\n';
-	line[i] = '\0';
+	//for (i = 0; (c = getchar()) != 0 && c != '\n' && c != EOF; line[i++]=c);
+	*line++ = '\n';
+	*line = '\0';
 	if (c == EOF)
 		return 0;
 	else
