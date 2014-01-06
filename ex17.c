@@ -57,23 +57,25 @@ void Database_load (struct Connection *conn)
 	struct Address *addr;
 
 	int rc = fread(&db->maxrows, sizeof(db->maxrows), 1, conn->file);
-	if (rc != 1) die(conn, "Failed to load database.");
+	if (rc != 1) die(conn, "Failed to load maxrows.");
 	rc = fread(&db->maxdata, sizeof(db->maxdata), 1, conn->file);
-	if (rc != 1) die(conn, "Failed to load database.");
+	if (rc != 1) die(conn, "Failed to load maxdata.");
 	db->rows = malloc(db->maxrows * sizeof(struct Address));
 	if(!db->rows) die(conn, "Memory error.");
 	for (addr = db->rows; addr < db->rows + db->maxrows; addr++) {
 		rc = fread(&addr->id, sizeof(addr->id), 1, conn->file);
-		if (rc != 1) die(conn, "Failed to load database.");
+		if (rc != 1) die(conn, "Failed to load id.");
 		rc = fread(&addr->set, sizeof(addr->set), 1, conn->file);
-		if (rc != 1) die(conn, "Failed to load database.");
+		if (rc != 1) die(conn, "Failed to load set.");
 
-		addr->name = malloc(db->maxdata);
-		rc = fread(addr->name, sizeof(addr->name), 1, conn->file);
-		if (rc != 1) die(conn, "Failed to load database.");
 		addr->email = malloc(db->maxdata);
+		if(!addr->email) die(conn, "Memory error (email)");
 		rc = fread(addr->email, sizeof(addr->email), 1, conn->file);
-		if (rc != 1) die(conn, "Failed to load database.");
+		if (rc != 1) die(conn, "Failed to load email.");
+		addr->name = malloc(db->maxdata);
+		if(!addr->name) die(conn, "Memory error (name)");
+		rc = fread(addr->name, sizeof(addr->name), 1, conn->file);
+		if (rc != 1) die(conn, "Failed to load name.");
 	}
 
 
