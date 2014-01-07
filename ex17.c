@@ -75,7 +75,6 @@ void Database_load (struct Connection *conn)
 	if (fread(&db->maxdata, sizeof(db->maxdata), 1, conn->file) != 1) {
 		die(conn, "Failed to load maxdata.");
 	}
-	//printf("max rows : %d, max data : %d\n", db->maxrows, db->maxdata);
 
 	db->rows = malloc(db->maxrows * sizeof(struct Address));
 	if(!db->rows) die(conn, "Memory error.");
@@ -206,10 +205,6 @@ void Database_get(struct Connection *conn, int id)
 
 void Database_delete(struct Connection *conn, int id)
 {
-	////struct Address addr = {.id = id, .set = 0};
-	//struct Address *addr;
-	//addr = &conn->db->rows[id];
-	//addr->set = 0;
 	conn->db->rows[id].set = 0;
 }
 
@@ -226,6 +221,30 @@ void Database_list(struct Connection *conn)
 	}
 }
 
+void Database_find (struct Connection *conn, char *s)
+{
+	struct Database *db = conn->db;
+	struct Address *addr;
+	for (addr = db->rows; addr < db->rows + db->maxrows; addr++) {
+		if (addr->set && *addr->name == *s) {
+			Address_print(addr);
+		}
+	}
+}
+
+void Database_info (struct Connection *conn)
+{
+	struct Database *db = conn->db;
+	printf("max rows : %d\n", db->maxrows);
+	printf("data size : %d (name, email)\n", db->maxdata);
+}
+
+void test_struct ()
+{
+	printf("Adresse:%d\n", sizeof(struct Address));
+	exit(0);
+}
+
 int main (int argc, char *argv[])
 {
 	if(argc < 3) die(NULL, "USAGE : ex17 <dbfile> <action> [action params] ");
@@ -236,9 +255,13 @@ int main (int argc, char *argv[])
 	int id = 0;
 
 	if (argc > 3) id = atoi(argv[3]);
-	if (action != 'c' && id > conn->db->maxrows) die(conn, "There is not that many records");
+	if (action != 'c'&& action != 'f' && id > conn->db->maxrows) die(conn, "There is not that many records");
 
 	switch(action) {
+		case 'f':
+			if (argc != 4) die(conn, "Need a string to search for");
+			Database_find(conn, argv[3]);
+			break;
 		case 'c':
 			if (argc == 3) {
 				conn->db->maxrows = MAX_ROWS;
@@ -269,6 +292,9 @@ int main (int argc, char *argv[])
 			break;
 		case 'l':
 			Database_list(conn);
+			break;
+		case 'i':
+			Database_info(conn);
 			break;
 		default:
 			die(conn, "Invalid action, only : c = create, g = get, s = set, d = del, l = list");
