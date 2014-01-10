@@ -29,7 +29,9 @@ struct Connection {
 void Database_close(struct Connection *conn)
 {
 	if(conn) {
-		if(conn->file) fclose(conn->file);
+		if(conn->file) {
+			fclose(conn->file);
+		}
 		if(conn->db) {
 			if(conn->db->rows) {
 				struct Address *addr;
@@ -37,8 +39,12 @@ void Database_close(struct Connection *conn)
 					addr < conn->db->rows + conn->db->maxrows;
 					addr++)
 				{
-					if(addr->name) free(addr->name);
-					if(addr->email) free(addr->email);
+					if(addr->name) {
+						free(addr->name);
+					}
+					if(addr->email) {
+						free(addr->email);
+					}
 				}
 				free(conn->db->rows);	
 			}
@@ -257,8 +263,10 @@ void Database_find (struct Connection *conn, char *s)
 	for (addr = db->rows; addr < db->rows + db->maxrows; addr++) {
 		if (addr->set && *addr->name == *s) {
 			Address_print(addr);
+			return;
 		}
 	}
+	printf("%s non trouvé\n", s);
 }
 
 void Database_info (struct Connection *conn)
