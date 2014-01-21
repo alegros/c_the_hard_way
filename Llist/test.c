@@ -12,6 +12,8 @@ void test_pushpop() {
 		push(list, el);
 		printf("pushed %d\n", *el);
 	}
+	// *(int*)pop(list) = casts the pointer returned
+	// by pop() to an int pointer and dereferences it
 	printf("pop %d\n", *(int*)pop(list));
 	printf("pop %d\n", *(int*)pop(list));
 	printf("pop %d\n", *(int*)pop(list));
