@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 
-#define DOC_MAXROWS 50
-#define DOC_NT_SIZE 50
+#define DOC_MAXROWS 1000
+#define DOC_NTL_SIZE 50
 #define DOC_ARGS_SIZE 100
 #define DOC_SDESC_SIZE 100
 #define DOC_DESC_SIZE 500
@@ -12,6 +13,7 @@
 typedef struct Doc {
 	int id;
 	int set;
+	char *library;
 	char *type;
 	char *name;
 	char *args;
@@ -20,12 +22,12 @@ typedef struct Doc {
 } Doc; // Function documentation
 
 typedef struct Database {
-	Doc *rows;
 	int maxrows;
-	int nt_size; // Size of name and type
+	int ntl_size; // Size of name, type and library
 	int args_size;
 	int sdesc_size;
 	int desc_size;
+	Doc *rows;
 } Database;
 
 typedef struct Connection {
@@ -39,9 +41,35 @@ static Connection *conn;
 static char *filename = "/home/alex/c_the_hard_way/cref/cref.dat";
 
 
+void 
+Database_close() {
+	int i;
+
+	if (conn) {
+		if (conn->file) {
+			fclose(conn->file);
+		}
+		if (conn->db) {
+			if (conn->db->rows) {
+				for (i = 0; i < conn->db->maxrows; i++) {
+					free(conn->db->rows[i].name);
+					free(conn->db->rows[i].type);
+					free(conn->db->rows[i].args);
+					free(conn->db->rows[i].sdesc);
+					free(conn->db->rows[i].desc);
+					free(conn->db->rows[i].library);
+				}
+			}
+			free(conn->db);
+		}
+	}
+	free(conn);
+}
+
 void
 die (const char *msg) {
-	// TODO : free the connection
+	Database_close();
+
 	if (errno) {
 		perror(msg);
 	} else {
@@ -50,10 +78,61 @@ die (const char *msg) {
 	exit(1);
 }
 
+void 
+Database_info () {
+	Database *db = conn->db;
+	
+	printf("%d rows\n", db->maxrows);
+	printf("Size of name, type and library : %d\n", db->ntl_size);
+	printf("Size of args : %d\n", db->args_size);
+	printf("Size of short description : %d\n", db->sdesc_size);
+	printf("Size of long description : %d\n", db->desc_size);
+}
+
 void
 Doc_print (Doc *row) {
-	printf("%d\t%s\t%s\t%s\t%s\t%s\n", 
-		row->id, row->name, row->args, row->type, row->sdesc, row->desc);
+	printf("%d\t%s\t%s\t%s\t%s\t%s\t%s\n", 
+		row->id, row->library, row->type, row->name, row->args, row->sdesc, row->desc);
+}
+
+void
+Doc_set(int id, const char *library, const char *name, const char *type,
+		const char *args, const char *sdesc, const char *desc) {
+	Database *db = conn->db;
+	Doc *d = &conn->db->rows[id-1];
+
+	if (d->set) {
+		die("Already set, delete it first");
+	}
+
+	d->set = 1;
+	char *res = strncpy(d->library, library, db->ntl_size);
+	if (!res) {
+		die("String copy error");
+	}
+	res = strncpy(d->name, name, db->ntl_size);
+	if (!res) {
+		die("String copy error");
+	}
+	res = strncpy(d->type, type, db->ntl_size);
+	if (!res) {
+		die("String copy error");
+	}
+	printf("args : %s\n", args);
+	res = strncpy(d->args, args, db->args_size);
+	if (!res) {
+		die("String copy error");
+	}
+	printf("args : %s\n", d->args);
+	printf("args : %s\n", res);
+	res = strncpy(d->sdesc, sdesc, db->sdesc_size);
+	if (!res) {
+		die("String copy error");
+	}
+	res = strncpy(d->desc, desc, db->desc_size);
+	if (!res) {
+		die("String copy error");
+	}
 }
 
 void
@@ -61,13 +140,16 @@ Database_create (int *db_params, int param_cnt) { // Allocates memory for the da
 	Database *db = conn->db;
 	Doc *row;
 
-	printf("%d parameters given\n", param_cnt);
-	
 	db->maxrows = DOC_MAXROWS;
-	db->nt_size = DOC_NT_SIZE;
+	db->ntl_size = DOC_NTL_SIZE;
 	db->args_size = DOC_ARGS_SIZE;
 	db->sdesc_size = DOC_SDESC_SIZE;
 	db->desc_size = DOC_DESC_SIZE;
+
+	printf("\nInitializing database with :\n");
+	Database_info();
+	printf("\n...\n");
+
 	db->rows = malloc(sizeof(Doc) * db->maxrows);
 	if (!db->rows) {
 		die("Memory error");
@@ -77,12 +159,16 @@ Database_create (int *db_params, int param_cnt) { // Allocates memory for the da
 	for (row = db->rows, i = 0; row < db->rows + db->maxrows; row++, i++) {
 		row->id = i;
 		row->set = 0;
-		row->name = malloc(db->nt_size);
+		row->name = malloc(db->ntl_size);
 		if (!row->name) {
 			die("Memory error");
 		}
-		row->type = malloc(db->nt_size);
+		row->type = malloc(db->ntl_size);
 		if (!row->type) {
+			die("Memory error");
+		}
+		row->library = malloc(db->ntl_size);
+		if (!row->library) {
 			die("Memory error");
 		}
 		row->args = malloc(db->args_size);
@@ -98,36 +184,20 @@ Database_create (int *db_params, int param_cnt) { // Allocates memory for the da
 			die("Memory error");
 		}
 	}
-}
-
-void
-Database_load() {
-	Database *db = conn->db;
-	FILE *f = conn->file;
-	//Doc *row;
-
-	if (
-	fread(&db->maxrows, sizeof(db->maxrows), 1, f) != 1
-	|| fread(&db->nt_size, sizeof(db->nt_size), 1, f) != 1
-	|| fread(&db->args_size, sizeof(db->args_size), 1, f) != 1
-	|| fread(&db->sdesc_size, sizeof(db->sdesc_size), 1, f) != 1
-	|| fread(&db->desc_size, sizeof(db->desc_size), 1, f) != 1)
-	{
-		die("Read error");
-	};
+	printf("Done\n");
 }
 
 void
 Database_write() {
 	Database *db = conn->db;
+	Doc *row;
 	FILE *f = conn->file;
-	//Doc *row;
 
-	rewind(conn->file);
+	rewind(f);
 	
 	if (
 	fwrite(&db->maxrows, sizeof(db->maxrows), 1, f) != 1
-	|| fwrite(&db->nt_size, sizeof(db->nt_size), 1, f) != 1
+	|| fwrite(&db->ntl_size, sizeof(db->ntl_size), 1, f) != 1
 	|| fwrite(&db->args_size, sizeof(db->args_size), 1, f) != 1
 	|| fwrite(&db->sdesc_size, sizeof(db->sdesc_size), 1, f) != 1
 	|| fwrite(&db->desc_size, sizeof(db->desc_size), 1, f) != 1)
@@ -135,12 +205,97 @@ Database_write() {
 		die("Write error");
 	}
 
-	//for (row = db->rows; row < db->rows + db->maxrows; row++) {
-	//	fwrite(
-	//}
+	for (row = db->rows; row < db->rows + db->maxrows; ++row) {
+		if (
+		//fwrite(&row->id, sizeof(row->id), 1, f) != 1
+		//|| fwrite(&row->set, sizeof(row->set), 1, f) != 1
+		//|| fwrite(row->library, sizeof(row->library), 1, f) !=1
+		//|| fwrite(row->type, sizeof(row->type), 1, f) !=1
+		//|| fwrite(row->name, sizeof(row->name), 1, f) !=1
+		//|| fwrite(row->args, sizeof(row->args), 1, f) !=1
+		//|| fwrite(row->sdesc, sizeof(row->sdesc), 1, f) !=1
+		//|| fwrite(row->desc, sizeof(row->desc), 1, f) !=1)
 
-	if (fflush(conn->file) == -1) {
+		fwrite(&row->id, sizeof(row->id), 1, f) != 1
+		|| fwrite(&row->set, sizeof(row->set), 1, f) != 1
+		|| fwrite(row->library, db->ntl_size, 1, f) !=1
+		|| fwrite(row->type, db->ntl_size, 1, f) !=1
+		|| fwrite(row->name, db->ntl_size, 1, f) !=1
+		|| fwrite(row->args, db->args_size, 1, f) !=1
+		|| fwrite(row->sdesc, db->sdesc_size, 1, f) !=1
+		|| fwrite(row->desc, db->desc_size, 1, f) !=1)
+		{
+			die("Write error");
+		}
+	}
+
+	if (fflush(f) == -1) {
 		die("Cannot flush the database");
+	}
+}
+
+void
+Database_list() {
+	Doc *row;
+	Database *db = conn->db;
+	
+	for (row = db->rows; row < db->rows + db->maxrows; row++) {
+		if (row->set) {
+			Doc_print(row);
+		}
+	}
+}
+
+void
+Database_load() {
+	Database *db = conn->db;
+	Doc *row;
+
+	if (
+	fread(&db->maxrows, sizeof(db->maxrows), 1, conn->file) != 1
+	|| fread(&db->ntl_size, sizeof(db->ntl_size), 1, conn->file) != 1
+	|| fread(&db->args_size, sizeof(db->args_size), 1, conn->file) != 1
+	|| fread(&db->sdesc_size, sizeof(db->sdesc_size), 1, conn->file) != 1
+	|| fread(&db->desc_size, sizeof(db->desc_size), 1, conn->file) != 1)
+	{
+		die("Load error");
+	}
+	
+	db->rows = malloc(sizeof(struct Doc) * db->maxrows);
+	if (!db->rows) {
+		die("Memory error");
+	}
+
+	for (row = db->rows; row < db->rows + db->maxrows; ++row) {
+		row->library = malloc(db->ntl_size);
+		row->name = malloc(db->ntl_size);
+		row->type = malloc(db->ntl_size);
+		row->args = malloc(db->args_size);
+		row->sdesc = malloc(db->sdesc_size);
+		row->desc = malloc(db->desc_size);
+		if (
+		!row->name
+		|| !row->type
+		|| !row->library
+		|| !row->args
+		|| !row->sdesc
+		|| !row->desc)
+		{
+			die("Memory error");
+		}
+
+		if (
+		fread(&row->id, sizeof(row->id), 1, conn->file) != 1
+		|| fread(&row->set, sizeof(row->set), 1, conn->file) != 1
+		|| fread(row->library, db->ntl_size, 1, conn->file) != 1
+		|| fread(row->type, db->ntl_size, 1, conn->file) != 1
+		|| fread(row->name, db->ntl_size, 1, conn->file) != 1
+		|| fread(row->args, db->args_size, 1, conn->file) != 1
+		|| fread(row->sdesc, db->sdesc_size, 1, conn->file) != 1
+		|| fread(row->desc, db->desc_size, 1, conn->file) != 1)
+		{
+			die("Load error");
+		}
 	}
 }
 
@@ -159,55 +314,13 @@ Database_open(char cmd) {
 		conn->file = fopen(filename, "w");
 	} else {
 		conn->file = fopen(filename, "r+");
-		Database_load();
+		if (conn->file) {
+			Database_load();
+		}
 	}
 
 	if (!conn->file) {
 		die("Memory error");
-	}
-}
-
-void
-Database_list() {
-	Doc *row;
-	Database *db = conn->db;
-	
-	for (row = db->rows; row < db->rows + db->maxrows; row++) {
-		Doc_print(row);
-	}
-}
-
-void Database_info () {
-	Database *db = conn->db;
-	
-	if (fread(&db->maxrows, sizeof(db->maxrows), 1, conn->file) != 1) {
-		die("Read error");
-	}
-	printf("%d rows\n", db->maxrows);
-
-}
-
-void 
-Database_close() {
-	int i;
-
-	if (conn) {
-		if (conn->file) {
-			fclose(conn->file);
-		}
-		if (conn->db) {
-			if (conn->db->rows) {
-				for (i = 0; i < conn->db->maxrows; i++) {
-					free(conn->db->rows[i]->name);
-					free(conn->db->rows[i]->type);
-					free(conn->db->rows[i]->args);
-					free(conn->db->rows[i]->sdesc);
-					free(conn->db->rows[i]->desc);
-					free(conn->db->rows[i]);
-				}
-			}
-			free(db);
-		}
 	}
 }
 
@@ -216,6 +329,7 @@ int main(int argc, char **argv)
 	char cmd;
 	int *db_params; // Args to parameterize fields sizes
 	int param_cnt = 0;
+	int id;
 
 	if (argc > 1) {
 		cmd = argv[1][0];
@@ -232,7 +346,7 @@ int main(int argc, char **argv)
 		} else if (argc > 2) {
 			db_params = malloc(sizeof(int) * argc-2);
 			for (param_cnt = 2; param_cnt <= argc; param_cnt++, db_params++) {
-				// TODO : Handle error if parameter is not numeric
+				// TODO : Check that id is a number
 				*db_params = atoi(argv[param_cnt]);
 			}
 			param_cnt -= 2; // Keep track of how many parameters were passed
@@ -243,6 +357,19 @@ int main(int argc, char **argv)
 	case 'i':
 		Database_info();
 		break;
+	case 'l':
+		Database_list();
+		break;
+	case 's':
+		if (argc == 9) {
+			// TODO : Check that id is a number
+			id = atoi(argv[2]);
+			Doc_set(id, argv[3], argv[4], argv[5], argv[6], argv[7], argv[8]);
+		} else {
+			printf("Pass arguments in the following order :\n[id] [Library] [Type] [Name] [Args] [Sdesc] [Desc]\n");
+		}
+		Database_write();
+		break;
 	default:
 		die("Invalid command");
 	}
@@ -250,4 +377,3 @@ int main(int argc, char **argv)
 	Database_close();
 	return 0;
 }
-
