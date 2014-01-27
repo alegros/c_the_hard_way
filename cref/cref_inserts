@@ -1,0 +1,2 @@
+set -e
+cref s 1 libc int fread "(ptr addr, size_t size, int n, FILE* file)" "Reads binary data from a file" "Reads n block of size into addr from file. Returns number of blocks read : n if n blocks could be read or less."

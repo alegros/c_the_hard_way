@@ -5,8 +5,8 @@
 
 
 #define DOC_MAXROWS 1000
-#define DOC_NTL_SIZE 50
-#define DOC_ARGS_SIZE 100
+#define DOC_NTL_SIZE 100
+#define DOC_ARGS_SIZE 200
 #define DOC_SDESC_SIZE 100
 #define DOC_DESC_SIZE 500
 
@@ -118,13 +118,10 @@ Doc_set(int id, const char *library, const char *name, const char *type,
 	if (!res) {
 		die("String copy error");
 	}
-	printf("args : %s\n", args);
 	res = strncpy(d->args, args, db->args_size);
 	if (!res) {
 		die("String copy error");
 	}
-	printf("args : %s\n", d->args);
-	printf("args : %s\n", res);
 	res = strncpy(d->sdesc, sdesc, db->sdesc_size);
 	if (!res) {
 		die("String copy error");
@@ -138,7 +135,6 @@ Doc_set(int id, const char *library, const char *name, const char *type,
 void
 Database_create (int *db_params, int param_cnt) { // Allocates memory for the database
 	Database *db = conn->db;
-	Doc *row;
 
 	db->maxrows = DOC_MAXROWS;
 	db->ntl_size = DOC_NTL_SIZE;
@@ -156,31 +152,31 @@ Database_create (int *db_params, int param_cnt) { // Allocates memory for the da
 	}
 	
 	int i;
-	for (row = db->rows, i = 0; row < db->rows + db->maxrows; row++, i++) {
-		row->id = i;
-		row->set = 0;
-		row->name = malloc(db->ntl_size);
-		if (!row->name) {
+	for (i = 0; i < db->maxrows; i++) {
+		db->rows[i].id = i;
+		db->rows[i].set = 0;
+		db->rows[i].name = malloc(db->ntl_size);
+		if (!db->rows[i].name) {
 			die("Memory error");
 		}
-		row->type = malloc(db->ntl_size);
-		if (!row->type) {
+		db->rows[i].type = malloc(db->ntl_size);
+		if (!db->rows[i].type) {
 			die("Memory error");
 		}
-		row->library = malloc(db->ntl_size);
-		if (!row->library) {
+		db->rows[i].library = malloc(db->ntl_size);
+		if (!db->rows[i].library) {
 			die("Memory error");
 		}
-		row->args = malloc(db->args_size);
-		if (!row->args) {
+		db->rows[i].args = malloc(db->args_size);
+		if (!db->rows[i].args) {
 			die("Memory error");
 		}
-		row->sdesc = malloc(db->sdesc_size);
-		if (!row->sdesc) {
+		db->rows[i].sdesc = malloc(db->sdesc_size);
+		if (!db->rows[i].sdesc) {
 			die("Memory error");
 		}
-		row->desc = malloc(db->desc_size);
-		if (!row->desc) {
+		db->rows[i].desc = malloc(db->desc_size);
+		if (!db->rows[i].desc) {
 			die("Memory error");
 		}
 	}
@@ -207,15 +203,6 @@ Database_write() {
 
 	for (row = db->rows; row < db->rows + db->maxrows; ++row) {
 		if (
-		//fwrite(&row->id, sizeof(row->id), 1, f) != 1
-		//|| fwrite(&row->set, sizeof(row->set), 1, f) != 1
-		//|| fwrite(row->library, sizeof(row->library), 1, f) !=1
-		//|| fwrite(row->type, sizeof(row->type), 1, f) !=1
-		//|| fwrite(row->name, sizeof(row->name), 1, f) !=1
-		//|| fwrite(row->args, sizeof(row->args), 1, f) !=1
-		//|| fwrite(row->sdesc, sizeof(row->sdesc), 1, f) !=1
-		//|| fwrite(row->desc, sizeof(row->desc), 1, f) !=1)
-
 		fwrite(&row->id, sizeof(row->id), 1, f) != 1
 		|| fwrite(&row->set, sizeof(row->set), 1, f) != 1
 		|| fwrite(row->library, db->ntl_size, 1, f) !=1
