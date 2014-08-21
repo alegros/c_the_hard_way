@@ -21,9 +21,6 @@ int main(int argc, char **argv)
 {
 	int i;
 	int nbArgs = 3;
-	//int nbArgs = atoi(*argv[1]);
-
-	//printf("Taille de la liste d'arguments : %d\n", nbArgs);
 
 	int *args = test_varargs(nbArgs, 76, 46, 33, 94, 36, 3463);
 
