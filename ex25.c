@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include "dbg.h"
 
 #define MAX_DATA 100
@@ -87,6 +88,23 @@ int read_scan(const char *fmt, ...)
 error:
 	va_end(argp);
 	return -1;
+}
+
+int my_printf(char *strfmt[], ...)
+{
+	int i;
+	int length;
+	int length_digits;
+	va_list ap;
+	va_start(ap, strfmt);
+
+	for (length=0; strfmt[length] != '\0'; length++);
+	//Trouver le nombre de chiffres dans length, puis l'afficher
+	for (i=length; i > 1; i /= 10, length_digits++);
+
+	//for (i=0; i <= length; i++) {
+	//	 putc(strfmt[i], stdout);
+	//}
 }
 
 
